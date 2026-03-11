@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static("public"))
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin:"https://email-saas-rose.vercel.app/",
     credentials: true,
   })
 );
