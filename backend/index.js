@@ -21,19 +21,22 @@ import { orderRouter } from "./src/Routing/orderRouting.js"
 dotenv.config()
 const app = express()
 connnectdb()
+
+// 1. CORS (Must be at the very top)
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow any origin for now to solve the deployment blockers
+      callback(null, true);
+    },
+    credentials: true,
+  })
+);
+
 app.use(cookieParser())
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static("public"))
-app.use(
-  cors({
-    origin: [
-      "https://email-saas-rose.vercel.app", 
-      "https://email-saas-git-main-avnishs-projects-1ba37bdf.vercel.app"
-    ],
-    credentials: true,
-  })
-);
 
 app.get("/", (req, res) => {
   res.send("Welcome")
