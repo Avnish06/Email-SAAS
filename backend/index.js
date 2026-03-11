@@ -1,8 +1,8 @@
-dotenv.config()
-import express from "express"
 import dotenv from "dotenv"
+dotenv.config()
+
+import express from "express"
 import cors from "cors"
-import jwt from "jsonwebtoken"
 import cookieParser from "cookie-parser"
 import { authRouter } from "./src/Routing/authRouting.js"
 import { DetailsRouter } from "./src/Routing/userDetailsRouting.js"
@@ -17,30 +17,42 @@ import { Adminroute } from "./src/Routing/AdminRoute.js"
 import { plansRouter } from "./src/Routing/plansRouting.js"
 import { orderRouter } from "./src/Routing/orderRouting.js"
 
-
-dotenv.config()
 const app = express()
-connnectdb()
 
-// 1. CORS (Must be at the very top)
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow any origin for now to solve the deployment blockers
-      callback(null, true);
-    },
-    credentials: true,
-  })
-);
+// Connect to Database (Async)
+connnectdb().catch(err => console.error("Initial DB connection failed:", err));
+
+// 1. Robust CORS Middleware
+app.use(cors({
+  origin: true, // Echoes back the request's origin
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+}));
+
+// 2. Manual OPTIONS Handling (Fail-safe for preflights)
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.sendStatus(204);
+});
 
 app.use(cookieParser())
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static("public"))
 
+// Health Check
+app.get("/api/v1/health", (req, res) => {
+  res.status(200).json({ status: "ok", time: new Date().toISOString() });
+});
+
 app.get("/", (req, res) => {
-  res.send("Welcome")
+  res.send("Welcome to Email Marketing API")
 })
+
 app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/userinfo", DetailsRouter)
 app.use("/api/v1/contactinfo", contactRouter)
@@ -53,10 +65,16 @@ app.use("/api/v1/admin", Adminroute)
 app.use("/api/v1/plans", plansRouter)
 app.use("/api/v1/orders", orderRouter)
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err);
+  res.status(500).json({ message: "Internal Server Error", error: err.message });
+});
+
 // Only listen locally. Vercel handles the server via the exported app.
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, (req, res) => {
+  const PORT = process.env.PORT || 8001; // Match local env
+  app.listen(PORT, () => {
     console.log(`Server is listening on the ${PORT}`)
   })
 }
