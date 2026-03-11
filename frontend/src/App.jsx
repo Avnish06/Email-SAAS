@@ -42,7 +42,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 /* API URL */
-export const AppUrl = import.meta.env.VITE_API_URL || "https://email-saas-28zn-git-main-avnishs-projects-1ba37bdf.vercel.app";
+export const AppUrl = import.meta.env.VITE_API_URL || "https://email-saas-28zn-p09omyyz1-avnishs-projects-1ba37bdf.vercel.app/api/v1";
 
 function App() { 
   const {user} = useDetails();
