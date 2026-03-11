@@ -42,9 +42,12 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 /* API URL */
+/* API URL */
 export const AppUrl = window.location.hostname === "localhost"
   ? "http://localhost:8001/api/v1"
-  : "/api/v1";
+  : window.location.hostname.includes("email-saas-28zn") 
+    ? "https://email-saas-rose.vercel.app/api/v1"
+    : "/api/v1";
 
 function App() { 
   const {user} = useDetails();
