@@ -2,6 +2,9 @@
   "name": "email-marketing-monorepo",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "build": "npm run build --prefix frontend"
+  },
   "workspaces": [
     "frontend",
     "backend"
