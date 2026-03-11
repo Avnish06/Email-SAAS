@@ -5,6 +5,7 @@ import { v4 as uuid } from "uuid";
 import CampaignLayout from "../layouts/CampaignLayout";
 import React from "react";
 import axios from "axios";
+import { AppUrl } from "../App";
 import { 
   Sparkles, 
   Loader2, 
@@ -114,7 +115,7 @@ const Editor = () => {
     if (!aiPrompt) return;
     setIsGenerating(true);
     try {
-      const { data } = await axios.post("http://localhost:8001/api/v1/ai/generate", { prompt: aiPrompt });
+      const { data } = await axios.post(`${AppUrl}/ai/generate`, { prompt: aiPrompt });
       if (data.success) {
         setBlocks(data.blocks);
         setIsAIModalOpen(false);
