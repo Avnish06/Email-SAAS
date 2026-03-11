@@ -44,7 +44,7 @@ import "react-toastify/dist/ReactToastify.css";
 /* API URL */
 export const AppUrl = window.location.hostname === "localhost"
   ? "http://localhost:8001/api/v1"
-  : "https://email-saas-rose.vercel.app/api/v1";
+  : "/api/v1";
 
 function App() { 
   const {user} = useDetails();
