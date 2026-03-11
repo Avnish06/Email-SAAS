@@ -1,11 +1,11 @@
-import { signup, login, getCurrentUser, updateProfile } from "../controllers/authControllers.js";
-import { isAuth } from "../middleware/isAuth.js";
-import express from "express"
+import { signup, login, getCurrentUser, updateProfile, googleAuth } from "../controllers/authControllers.js";
+import { accessController } from "../middleware/accessController.js";
+import express from "express";
 
-export const authRouter = express.Router()
+export const authRouter = express.Router();
 
-
-authRouter.post("/signup", signup)
-authRouter.post("/login", login)
-authRouter.get("/user", getCurrentUser)
-authRouter.put("/profile", isAuth, updateProfile)
+authRouter.post("/signup", signup);
+authRouter.post("/login", login);
+authRouter.post("/google", googleAuth);
+authRouter.get("/user", accessController, getCurrentUser);
+authRouter.put("/profile", accessController, updateProfile);

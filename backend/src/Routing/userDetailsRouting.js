@@ -1,5 +1,6 @@
 import express from "express"
 import { userDetails } from "../controllers/userDetailsController.js"
-export const DetailsRouter = express()
+import { accessController } from "../middleware/accessController.js";
+export const DetailsRouter = express.Router()
 
-DetailsRouter.post("/userdetails", userDetails)
+DetailsRouter.post("/userdetails", accessController, userDetails)

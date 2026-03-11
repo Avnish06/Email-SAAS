@@ -4,17 +4,55 @@ import bcrypt from "bcrypt";
 import sendEmail from "../config/sendEmail.js";
 
 const generateToken = (userId) => {
-  return jwt.sign(
-    { userId },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
+
 const cookieOptions = {
   httpOnly: true,
   secure: false,
-  maxAge: 7*24*60*60*1000
-}; 
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+/* ========== GOOGLE AUTH (Login or Signup via Firebase) ========== */
+export const googleAuth = async (req, res) => {
+  try {
+    const { name, email, photoURL, googleId } = req.body;
+
+    if (!email || !googleId) {
+      return res.status(400).json({ message: "Google credentials missing" });
+    }
+
+    // Find user by email or googleId
+    let user = await User.findOne({ $or: [{ email }, { googleId }] });
+
+    if (!user) {
+      // First-time Google sign-in: create the user (no password needed)
+      user = await User.create({
+        name,
+        email,
+        googleId,
+        photoURL,
+        phonenumber: "",   // optional for Google users
+        password: "",      // no password for Google users
+      });
+    }
+
+    const token = generateToken(user._id);
+    res.cookie("token", token, cookieOptions);
+
+    return res.status(200).json({
+      message: "Google login successful",
+      user,
+    });
+  } catch (error) {
+    console.error("GOOGLE AUTH ERROR:", error);
+    return res.status(500).json({
+      message: "Google authentication failed",
+      error: error.message,
+    });
+  }
+};
+
 export const signup = async (req, res) => {
   try {
     let { name, email, password, phonenumber } = req.body;
@@ -113,7 +151,7 @@ export const login = async (req, res) => {
       error: error.message,
     });
   }
-}; 
+};
 export const getCurrentUser = async (req, res) => {
   let user = await User.findById(req.userId)
   return res.status(200).json({ message: "User data fetching Successfully", user })

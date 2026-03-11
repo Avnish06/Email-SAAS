@@ -18,6 +18,16 @@ import Contacts from "./pages/Contacts";
 import Dashboard from "./pages/Dashboard";
 import CreateTemplate from "./Templates/CreateTemplate.jsx";
 import TemplateLibrary from "./Templates/TemplateLibrary";
+import Support from "./pages/Support";
+import { useDetails } from "./Context/userContext.jsx";
+import Pricing from "./pages/Pricing.jsx";
+import PaymentSuccess from "./pages/PaymentSuccess.jsx";
+import { AllUsers } from "./Admin/AllUsers.jsx";
+import { EditUserDetails } from "./Admin/EditUserDetails.jsx";
+import { Templatehandling } from "./Admin/Templatehandling.jsx";
+import { AdminHome } from "./Admin/AdminHome.jsx";
+import { PlansUpdtion } from "./Admin/PlansUpdtion.jsx";
+import { UserInfo } from "./Admin/UserInfo.jsx";
 
 
 /* Layout */
@@ -34,7 +44,8 @@ import "react-toastify/dist/ReactToastify.css";
 /* API URL */
 export const AppUrl = import.meta.env.VITE_API_URL || "http://localhost:8001/api/v1";
 
-function App() {
+function App() { 
+  const {user} = useDetails();
   return (
     <>
       {/* HEADER */}
@@ -52,21 +63,30 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/contacts" element={<Contacts />} />
-          <Route path="/profile" element={<Profile />} />
-           <Route path="/campaign/templates" element={<TemplateLibrary />} />
-          <Route path="/campaign" element={<Campaign />} />
-          <Route path="/campaigns" element={<CampaignDashboard />} />
-          <Route path="/campaign/new" element={<CampaignName />} />
-          <Route path="/campaign/contacts" element={<ImportContacts />} />
-          <Route path="/campaign/type" element={<SelectType />} />
-          <Route path="/campaign/write" element={<WriteMail />} />
-          <Route path="/campaign/editor" element={<Editor />} />
-          <Route path="/campaign/preview" element={<Preview />} />
-          <Route path="/createtemplate" element={<CreateTemplate />} />
-          <Route path="/userdetails" element={<UserDetails />} />
+          <Route path="/dashboard" element={user?<Dashboard />:<Login />} />
+          <Route path="/analytics" element={user?<Analytics />:<Login />} />
+          <Route path="/contacts" element={user?<Contacts />:<Login />} />
+          <Route path="/profile" element={user?<Profile />:<Login />} />
+           <Route path="/campaign/templates" element={user?<TemplateLibrary />:<Login />} />
+          <Route path="/campaign" element={user?<Campaign />:<Login />} />
+          <Route path="/campaigns" element={user ? <CampaignDashboard /> : <Login />} />
+          <Route path="/campaign/new" element={user ? <CampaignName /> : <Login />} />
+          <Route path="/campaign/contacts" element={user ? <ImportContacts /> : <Login />} />
+          <Route path="/campaign/type" element={user ? <SelectType /> : <Login />} />
+          <Route path="/campaign/write" element={user ? <WriteMail /> : <Login />} />
+          <Route path="/campaign/editor" element={user ? <Editor /> : <Login />} />
+          <Route path="/campaign/preview" element={user ? <Preview /> : <Login />} />
+          <Route path="/createtemplate" element={user ? <CreateTemplate /> : <Login />} />
+          <Route path="/userdetails" element={user ? <UserDetails /> : <Login />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/adminPanel" element={<AdminHome />} />
+          <Route path="/admin/users" element={<AllUsers />} />
+          <Route path="/admin/edit-user/:id" element={<EditUserDetails />} />
+          <Route path="/admin/templates" element={<Templatehandling />} />
+          <Route path="/admin/plans" element={<PlansUpdtion />} />
+          <Route path="/admin/userinfo" element={<UserInfo />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
           {/* 404 */}
           <Route
             path="*"

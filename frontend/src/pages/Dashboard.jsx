@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import axios from "axios";
 import { AppUrl } from "../App";
+import { 
+  BarChart2, 
+  Users, 
+  Send, 
+  PlusCircle, 
+  History, 
+  PieChart, 
+  ArrowUpRight 
+} from "lucide-react";
 
 
 const Dashboard = () => {
@@ -51,134 +59,139 @@ const Dashboard = () => {
   /* ================= UI ================= */
 
   return (
-    <div className="pt-28 px-6 min-h-screen bg-background relative overflow-hidden">
-      <div className="bg-grid absolute inset-0 opacity-20 pointer-events-none" />
+    <div className="pt-32 pb-20 px-6 min-h-screen bg-background relative overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent/5 blur-[100px] rounded-full translate-y-1/2 -translate-x-1/4" />
 
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-12 relative z-10">
 
         {/* HEADER */}
-        <h1 className="text-3xl font-bold text-foreground">
-          Dashboard 📊
-        </h1>
-
-        <p className="text-muted-foreground">
-          Overview of your email marketing system
-        </p>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold text-foreground tracking-tight">
+            Dashboard
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Monitor and manage your email marketing performance.
+          </p>
+        </div>
 
         {/* STATS */}
-        <div className="grid md:grid-cols-3 gap-6">
-
+        <div className="grid md:grid-cols-3 gap-8">
           <StatCard
             title="Total Campaigns"
             value={stats.campaigns}
-            icon="📢"
+            icon={Send}
             loading={loading}
+            color="primary"
           />
-
           <StatCard
             title="Total Contacts"
             value={stats.contacts}
-            icon="👥"
+            icon={Users}
             loading={loading}
+            color="accent"
           />
-
           <StatCard
             title="Emails Sent"
             value={stats.sent}
-            icon="📬"
+            icon={BarChart2}
             loading={loading}
+            color="primary"
           />
-
         </div>
 
         {/* ACTIONS */}
-        <div className="grid md:grid-cols-2 gap-6">
-
-          <ActionCard
-            title="Create Campaign"
-            desc="Start a new email campaign"
-            btn="Create"
-            onClick={() => navigate("/campaign/new")}
-          />
-
-          <ActionCard
-            title="Manage Contacts"
-            desc="View and manage subscribers"
-            btn="Open"
-            onClick={() => navigate("/contacts")}
-          />
-
-          <ActionCard
-            title="Campaign History"
-            desc="Track previous campaigns"
-            btn="View"
-            onClick={() => navigate("/campaigns")}
-          />
-
-          <ActionCard
-            title="Analytics"
-            desc="View performance reports"
-            btn="Analyze"
-            onClick={() => navigate("/analytics")}
-          />
-
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-foreground">Quick Actions</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <ActionCard
+              title="Create Campaign"
+              desc="Design and launch a new email blast to your subscribers."
+              icon={PlusCircle}
+              btn="Launch Campaign"
+              onClick={() => navigate("/campaign/new")}
+            />
+            <ActionCard
+              title="Manage Contacts"
+              desc="Import, segment, and organize your audience database."
+              icon={Users}
+              btn="Open Contacts"
+              onClick={() => navigate("/contacts")}
+            />
+            <ActionCard
+              title="Campaign History"
+              desc="Review performance of your past sent emails."
+              icon={History}
+              btn="View History"
+              onClick={() => navigate("/campaigns")}
+            />
+            <ActionCard
+              title="Analytics"
+              desc="Deep dive into open rates, clicks, and conversion data."
+              icon={PieChart}
+              btn="Analyze Stats"
+              onClick={() => navigate("/analytics")}
+            />
+          </div>
         </div>
-
       </div>
-
     </div>
   );
 };
 
 export default Dashboard;
 
-
 /* ================= COMPONENTS ================= */
 
-const StatCard = ({ title, value, icon, loading }) => {
-
+const StatCard = ({ title, value, icon: Icon, loading, color }) => {
   return (
-    <div className="bg-card p-6 rounded-xl border border-border shadow text-center space-y-2 relative z-10 backdrop-blur-sm">
-
-      <div className="text-4xl">
-        {icon}
+    <div className={`bg-card p-8 rounded-3xl border border-border group hover:border-${color}/50 transition-all duration-300 shadow-sm hover:shadow-xl relative overflow-hidden`}>
+      <div className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity`}>
+        <Icon size={100} className={`text-${color}`} />
       </div>
-
-      <h3 className="text-muted-foreground text-sm uppercase tracking-wider font-semibold">
-        {title}
-      </h3>
-
-      <p className="text-3xl font-bold text-primary">
-
-        {loading ? "..." : value}
-
-      </p>
-
+      <div className="relative z-10 space-y-4">
+        <div className={`w-12 h-12 rounded-2xl bg-${color}/10 flex items-center justify-center text-${color}`}>
+          <Icon size={24} />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-muted-foreground text-xs uppercase tracking-[0.1em] font-bold">
+            {title}
+          </h3>
+          <p className="text-4xl font-black text-foreground">
+            {loading ? <span className="animate-pulse">...</span> : value}
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
 
-
-const ActionCard = ({ title, desc, btn, onClick }) => {
-
+const ActionCard = ({ title, desc, icon: Icon, btn, onClick }) => {
   return (
-    <div className="bg-card p-6 rounded-xl border border-border shadow-xl space-y-3 relative z-10 backdrop-blur-sm">
-
-      <h3 className="text-xl font-semibold text-foreground">
-        {title}
-      </h3>
-
-      <p className="text-muted-foreground text-sm">
-        {desc}
-      </p>
-
+    <div className="bg-card p-8 rounded-[32px] border border-border group hover:border-primary/30 transition-all duration-500 shadow-sm hover:shadow-2xl flex flex-col justify-between">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-primary border border-border group-hover:scale-110 transition-transform">
+            <Icon size={24} />
+          </div>
+          <ArrowUpRight className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-all -translate-y-2 group-hover:translate-y-0" size={20} />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-foreground">
+            {title}
+          </h3>
+          <p className="text-muted-foreground text-sm leading-relaxed mt-2">
+            {desc}
+          </p>
+        </div>
+      </div>
       <button
         onClick={onClick}
-        className="bg-primary text-primary-foreground px-5 py-2 rounded-lg font-semibold hover:opacity-90 transition-all shadow-md shadow-primary/10"
+        className="mt-8 px-6 py-3 bg-secondary text-foreground rounded-2xl font-bold text-sm border border-border hover:bg-primary hover:text-white hover:border-primary transition-all active:scale-95 flex items-center justify-center gap-2"
       >
         {btn}
       </button>
-
     </div>
   );
 };
