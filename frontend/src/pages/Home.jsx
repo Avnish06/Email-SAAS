@@ -1,6 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import axios from "axios";
+import { AppUrl } from "../App";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { openRazorpay } from "../utils/useRazorpay";
+import { useDetails } from "../Context/userContext";
 import {
   Zap,
   ArrowRight,
@@ -145,6 +150,103 @@ const FeatureCard = ({ icon: Icon, title, desc }) => {
 
 const Home = () => {
   const navigate = useNavigate();
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [payingPlanId, setPayingPlanId] = useState(null);
+  const { user } = useDetails();
+
+  const handleSelectPlan = async (plan) => {
+    if (!user) {
+      toast.info("Please log in to subscribe to a plan.");
+      navigate("/login");
+      return;
+    }
+
+    if (plan.Cost === 0) {
+      localStorage.setItem("trialStartDate", new Date().toISOString());
+      toast.success("Free trial started! Let's create your first campaign.");
+      navigate("/campaign/new");
+      return;
+    }
+
+    try {
+      setPayingPlanId(plan._id);
+
+      const { data } = await axios.post(
+        `${AppUrl}/orders/create`,
+        { planId: plan._id },
+        { withCredentials: true }
+      );
+
+      if (!data.success) {
+        toast.error(data.message || "Could not create order.");
+        return;
+      }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: data.order.amount,
+        currency: data.order.currency,
+        name: "EmailMarketingPro",
+        description: plan.planName + " Plan",
+        order_id: data.order.id,
+        prefill: {
+          name: user?.name || "",
+          email: user?.email || "",
+        },
+        theme: { color: "#0f9d8e" },
+      };
+
+      const paymentResponse = await openRazorpay(options);
+
+      const verifyRes = await axios.post(
+        `${AppUrl}/orders/verify`,
+        {
+          razorpayOrderId: paymentResponse.razorpay_order_id,
+          razorpayPaymentId: paymentResponse.razorpay_payment_id,
+          razorpaySignature: paymentResponse.razorpay_signature,
+          planId: plan._id,
+        },
+        { withCredentials: true }
+      );
+
+      if (verifyRes.data.success) {
+        toast.success("🎉 Payment successful! Your plan is now active.");
+        navigate("/payment-success", {
+          state: {
+            planName: plan.planName,
+            amount: plan.Cost,
+            currency: plan.currency,
+          },
+        });
+      } else {
+        toast.error("Payment verification failed. Contact support.");
+      }
+    } catch (err) {
+      if (err?.message === "Payment cancelled by user.") {
+        toast.info("Payment cancelled.");
+      } else {
+        console.error(err);
+        toast.error(err?.message || "Something went wrong with the payment.");
+      }
+    } finally {
+      setPayingPlanId(null);
+    }
+  };
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const { data } = await axios.get(`${AppUrl}/plans/all`);
+        if (data.success) setPlans(data.plans);
+      } catch (err) {
+        console.error("Failed to load plans:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   return (
     <div className="min-h-screen text-foreground overflow-x-hidden selection:bg-primary/30 bg-background dark:bg-background">
@@ -599,101 +701,78 @@ const Home = () => {
       <section id="pricing" className="py-24 border-t border-border bg-gradient-to-b from-accent/5 to-background">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="text-center max-w-[600px] mx-auto mb-16">
-            <h2 className="text-gradient text-4xl font-bold mb-4 text-balance">Simple, transparent pricing</h2>
+            <h2 className="text-gradient text-[40px] font-bold mb-4">
+              Simple, transparent pricing <span className="text-xs opacity-50">(DYNAMIC)</span>
+            </h2>
             <p className="text-lg text-muted-foreground">
               Lock in founding member rates during early access
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Free Trial */}
-            <div className="relative p-8 rounded-[24px] border border-border bg-card flex flex-col items-start text-start hover:border-primary/30 transition-all">
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold mb-2 text-foreground">Free Trial</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">Perfect for testing the waters</p>
+            {loading ? (
+              <div className="col-span-full flex justify-center py-20 text-primary">
+                <Sparkles className="animate-spin w-10 h-10" />
               </div>
-              <div className="mb-8 flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-foreground">Free</span>
-                <span className="text-muted-foreground text-sm font-medium">/3 days</span>
-              </div>
-              <div className="flex-1 space-y-4 mb-10 w-full">
-                {["3-day full access trial","Create up to 5 campaigns","Import up to 100 contacts","Basic AI template generation","Standard support","No credit card required"].map((f, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <Zap size={14} className="text-accent mt-0.5 shrink-0" fill="currentColor" />
-                    <span className="text-sm text-foreground/80 leading-tight">{f}</span>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={() => {
-                  localStorage.setItem("trialStartDate", new Date().toISOString());
-                  navigate("/campaign/new");
-                }}
-                className="w-full py-3.5 rounded-xl font-bold transition-all bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              >
-                Start Free Trial
-              </button>
-            </div>
+            ) : plans.map((plan) => (
+                <div 
+                  key={plan._id}
+                  className={`relative p-8 rounded-[24px] border bg-card flex flex-col items-start text-start transition-all duration-300 hover:shadow-2xl ${
+                    plan.isPopular 
+                    ? "border-primary shadow-[0_0_50px_rgba(15,157,142,0.15)] scale-[1.02]" 
+                    : "border-border hover:border-primary/30"
+                  }`}
+                >
+                  {plan.isPopular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[11px] font-black uppercase tracking-wider shadow-lg">
+                      <Zap size={11} fill="currentColor" />
+                      Most Popular
+                    </div>
+                  )}
 
-            {/* Monthly Plan */}
-            <div className="relative p-8 rounded-[24px] border border-primary bg-card shadow-[0_0_50px_rgba(15,157,142,0.15)] flex flex-col items-start text-start">
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold mb-2 text-foreground">Monthly Plan</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">Full access to all tools with flexible monthly billing</p>
-              </div>
-              <div className="mb-8 flex flex-col">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-muted-foreground line-through text-lg">₹829</span>
-                  <span className="text-4xl font-bold text-foreground">₹499</span>
-                  <span className="text-muted-foreground text-sm font-medium">/mo</span>
-                </div>
-              </div>
-              <div className="flex-1 space-y-4 mb-10 w-full">
-                {["All core tools included","Unlimited campaign creation","Unlimited contact import","Advanced AI features","Priority email support","Real-time analytics dashboard","Secure data encryption"].map((f, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <Zap size={14} className="text-accent mt-0.5 shrink-0" fill="currentColor" />
-                    <span className="text-sm text-foreground/80 leading-tight">{f}</span>
+                  <div className="mb-6">
+                    <h3 className="text-2xl font-bold mb-2 text-foreground">{plan.planName}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{plan.planDescription}</p>
                   </div>
-                ))}
-              </div>
-              <button
-                onClick={() => navigate("/pricing")}
-                className="w-full py-3.5 rounded-xl font-bold transition-all bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-500/20"
-              >
-                Get Started
-              </button>
-            </div>
 
-            {/* Yearly Plan */}
-            <div className="relative p-8 rounded-[24px] border border-border bg-card flex flex-col items-start text-start hover:border-primary/30 transition-all">
-              <span className="absolute top-4 right-4 px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-[10px] font-bold uppercase tracking-wider">Save 17%</span>
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold mb-2 text-foreground">Yearly Plan</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">Best value — get 2 months free with yearly billing</p>
-              </div>
-              <div className="mb-8 flex flex-col">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-muted-foreground line-through text-lg">₹8,299</span>
-                  <span className="text-4xl font-bold text-foreground">₹4,999</span>
-                  <span className="text-muted-foreground text-sm font-medium">/yr</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">₹416 per month</p>
-              </div>
-              <div className="flex-1 space-y-4 mb-10 w-full">
-                {["Everything in Monthly Plan","2 months free every year","Bulk message scheduling","Team collaboration tools","Early access to new features","Dedicated account manager","Advanced business API"].map((f, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <Zap size={14} className="text-accent mt-0.5 shrink-0" fill="currentColor" />
-                    <span className="text-sm text-foreground/80 leading-tight">{f}</span>
+                  <div className="mb-8 flex items-baseline gap-2">
+                    {plan.Cost === 0 ? (
+                      <span className="text-4xl font-bold text-foreground">Free</span>
+                    ) : (
+                      <span className="text-4xl font-bold text-foreground">₹{plan.Cost.toLocaleString("en-IN")}</span>
+                    )}
+                    <span className="text-muted-foreground text-sm font-medium">/{plan.duration}</span>
                   </div>
-                ))}
-              </div>
-              <button
-                onClick={() => navigate("/pricing")}
-                className="w-full py-3.5 rounded-xl font-bold transition-all bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              >
-                Get Started
-              </button>
-            </div>
+
+                  <div className="flex-1 space-y-4 mb-10 w-full">
+                    {plan.features.map((f, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <Zap size={14} className="text-accent mt-0.5 shrink-0" fill="currentColor" />
+                        <span className="text-sm text-foreground/80 leading-tight">{f}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => handleSelectPlan(plan)}
+                    disabled={payingPlanId === plan._id}
+                    className={`w-full py-3.5 flex items-center justify-center gap-2 rounded-xl font-bold transition-all ${
+                      payingPlanId === plan._id 
+                      ? "opacity-60 cursor-not-allowed"
+                      : plan.isPopular 
+                      ? "bg-primary text-white hover:opacity-90"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    }`}
+                  >
+                    {payingPlanId === plan._id ? (
+                      <>
+                        <Sparkles size={16} className="animate-spin" /> Processing…
+                      </>
+                    ) : plan.Cost === 0 ? "Start Free Trial" : "Get Started"}
+                  </button>
+                </div>
+              ))
+            }
           </div>
         </div>
       </section>

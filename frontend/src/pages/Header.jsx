@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDetails } from "../Context/userContext";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { Zap, Clock, X } from "lucide-react";
+import { Zap, Clock, X, User, Mail, Phone, Calendar, Edit2, LogOut, Shield, ChevronDown } from "lucide-react";
 
 const brandLogo = "/Modern tech logo on blue background.png";
 
@@ -11,6 +11,8 @@ const Header = () => {
   const { user, setUser } = useDetails();
   const [trialDaysLeft, setTrialDaysLeft] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const trialStartDate = localStorage.getItem("trialStartDate");
@@ -22,12 +24,22 @@ const Header = () => {
       const remaining = Math.max(0, 3 - diffDays);
       setTrialDaysLeft(remaining);
 
-      // Check if banner was dismissed in this session
       const isDismissed = sessionStorage.getItem("trialBannerDismissed");
       if (!isDismissed) {
         setShowBanner(true);
       }
     }
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleDismissBanner = () => {
@@ -37,6 +49,8 @@ const Header = () => {
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem("user");
+    setShowDropdown(false);
     navigate("/login");
   };
 
@@ -102,19 +116,77 @@ const Header = () => {
             ))}
           </nav>
 
-          {/* Right: Auth */}
+          {/* Right: Auth + Profile Dropdown */}
           <div className="nav-right flex items-center gap-4">
             {user ? (
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground hidden sm:block">
-                  Hi, {user.name}
-                </span>
+              <div className="relative" ref={dropdownRef}>
+                {/* Clickable Avatar */}
                 <button
-                  onClick={logout}
-                  className="nav-pill px-5 py-1.5 rounded-full border border-primary/50 text-primary text-sm font-medium hover:bg-primary/5 transition-all"
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="flex items-center gap-2 group cursor-pointer"
                 >
-                  Logout
+                  <div className="w-9 h-9 rounded-full bg-primary/15 border-2 border-primary/40 flex items-center justify-center text-primary text-sm font-black transition-all group-hover:border-primary group-hover:shadow-[0_0_15px_rgba(15,157,142,0.3)]">
+                    {user.name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground hidden sm:block">
+                    {user.name?.split(" ")[0]}
+                  </span>
+                  <ChevronDown size={14} className={`text-muted-foreground transition-transform duration-200 ${showDropdown ? "rotate-180" : ""}`} />
                 </button>
+
+                {/* Dropdown Panel */}
+                {showDropdown && (
+                  <div className="absolute right-0 top-full mt-3 w-[320px] bg-card border border-border rounded-[20px] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[200]">
+                    {/* User Info Header */}
+                    <div className="px-6 pt-6 pb-5 bg-gradient-to-br from-primary/5 to-accent/5 border-b border-border">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-full bg-primary/15 border-2 border-primary/30 flex items-center justify-center text-primary text-xl font-black shadow-lg">
+                          {user.name?.charAt(0)?.toUpperCase() || "U"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-black text-foreground truncate">{user.name || "User"}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* User Details */}
+                    <div className="px-6 py-4 space-y-3">
+                      <div className="flex items-center gap-3 text-sm">
+                        <Mail size={14} className="text-primary shrink-0" />
+                        <span className="text-muted-foreground truncate">{user.email || "Not set"}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <Phone size={14} className="text-primary shrink-0" />
+                        <span className="text-muted-foreground">{user.phonenumber || "Not set"}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <Calendar size={14} className="text-primary shrink-0" />
+                        <span className="text-muted-foreground">
+                          Joined {user.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" }) : "Recently"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Links */}
+                    <div className="border-t border-border">
+                      <button
+                        onClick={() => { setShowDropdown(false); navigate("/profile"); }}
+                        className="w-full flex items-center gap-3 px-6 py-3.5 text-sm font-semibold text-foreground hover:bg-primary/5 transition-colors"
+                      >
+                        <Edit2 size={15} className="text-primary" />
+                        Edit Profile
+                      </button>
+                      <button
+                        onClick={logout}
+                        className="w-full flex items-center gap-3 px-6 py-3.5 text-sm font-semibold text-red-500 hover:bg-red-500/5 transition-colors border-t border-border"
+                      >
+                        <LogOut size={15} />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-3">

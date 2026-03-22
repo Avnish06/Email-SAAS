@@ -71,7 +71,7 @@ const Profile = () => {
       }
 
       const response = await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/profile`,
+        `${import.meta.env.VITE_API_URL}/api/v1/user/profile`,
         updateData,
         { withCredentials: true }
       );

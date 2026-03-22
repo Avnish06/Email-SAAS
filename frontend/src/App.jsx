@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
@@ -42,12 +42,33 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 /* API URL */
-export const AppUrl = window.location.hostname === "localhost"
-  ? "http://localhost:8001/api/v1"
-  : "https://email-saas-rose.vercel.app/api/v1";
+export const AppUrl = import.meta.env.VITE_API_URL;
+
+import axios from "axios";
+
+// Global interceptor to defensively catch expired cookies/sessions
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      if (
+        window.location.pathname !== "/login" &&
+        window.location.pathname !== "/signup"
+      ) {
+        console.warn("Session expired (401). Clearing local data and redirecting to login.");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 function App() { 
   const {user} = useDetails();
+  const location = useLocation();
+  const isLandingPage = location.pathname === "/";
+  
   return (
     <>
       {/* HEADER */}
@@ -104,7 +125,7 @@ function App() {
       </CampaignProvider>
 
       {/* FOOTER */}
-      <Footer />
+      {isLandingPage && <Footer />}
     </>
   );
 }
