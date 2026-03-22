@@ -1,5 +1,6 @@
 import dotenv from "dotenv"
 dotenv.config()
+console.log("SERVER STARTING - VERCEL:", process.env.VERCEL);
 
 import express from "express"
 import cors from "cors"
@@ -28,6 +29,8 @@ const allowedOrigins = [
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+  console.log(`[CORS DEBUG] Request from Origin: ${origin}, Method: ${req.method}, Path: ${req.path}`);
+  
   if (origin && (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app"))) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   } else if (!origin) {
@@ -39,6 +42,7 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Headers", "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization");
 
   if (req.method === "OPTIONS") {
+    console.log("[CORS DEBUG] Responding to OPTIONS preflight with 204");
     return res.status(204).end();
   }
   next();
