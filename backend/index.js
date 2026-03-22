@@ -20,33 +20,16 @@ import { orderRouter } from "./src/Routing/orderRouting.js"
 
 const app = express()
 
-// 1. Manual CORS & Preflight Middleware (MUST BE AT TOP)
-const allowedOrigins = [
-  "https://email-marketing-frontend-eight.vercel.app",
-  "https://email-marketing-frontend-bm3nolm49-avnishs-projects-1ba37bdf.vercel.app",
-  "http://localhost:5173"
-];
+// 1. Production CORS
+app.use(cors({
+  origin: "https://email-marketing-frontend-eight.vercel.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["X-CSRF-Token", "X-Requested-With", "Accept", "Accept-Version", "Content-Length", "Content-MD5", "Content-Type", "Date", "X-Api-Version", "Authorization"]
+}));
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  console.log(`[CORS DEBUG] Request from Origin: ${origin}, Method: ${req.method}, Path: ${req.path}`);
-  
-  if (origin && (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app"))) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  } else if (!origin) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-  }
-  
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-  res.setHeader("Access-Control-Allow-Headers", "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization");
-
-  if (req.method === "OPTIONS") {
-    console.log("[CORS DEBUG] Responding to OPTIONS preflight with 204");
-    return res.status(204).end();
-  }
-  next();
-});
+// Preflight handler
+app.options("*", cors());
 
 // Connect to Database (Async)
 connnectdb().catch(err => console.error("Initial DB connection failed:", err));
