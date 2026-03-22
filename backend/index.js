@@ -19,10 +19,7 @@ import { orderRouter } from "./src/Routing/orderRouting.js"
 
 const app = express()
 
-// Connect to Database (Async)
-connnectdb().catch(err => console.error("Initial DB connection failed:", err));
-
-// 1. Manual CORS & Preflight Middleware
+// 1. Manual CORS & Preflight Middleware (MUST BE AT TOP)
 const allowedOrigins = [
   "https://email-marketing-frontend-eight.vercel.app",
   "https://email-marketing-frontend-bm3nolm49-avnishs-projects-1ba37bdf.vercel.app",
@@ -34,7 +31,6 @@ app.use((req, res, next) => {
   if (origin && (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app"))) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   } else if (!origin) {
-    // Allow non-browser requests (like curl or postman) if needed
     res.setHeader("Access-Control-Allow-Origin", "*");
   }
   
@@ -47,6 +43,9 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Connect to Database (Async)
+connnectdb().catch(err => console.error("Initial DB connection failed:", err));
 
 app.use(cookieParser())
 app.use(express.json({ limit: "10mb" }));
