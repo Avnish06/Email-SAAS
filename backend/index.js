@@ -22,36 +22,30 @@ const app = express()
 // Connect to Database (Async)
 connnectdb().catch(err => console.error("Initial DB connection failed:", err));
 
-// 1. Robust CORS Middleware
+// 1. Manual CORS & Preflight Middleware
 const allowedOrigins = [
   "https://email-marketing-frontend-eight.vercel.app",
   "https://email-marketing-frontend-bm3nolm49-avnishs-projects-1ba37bdf.vercel.app",
   "http://localhost:5173"
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
-}));
-
-// 2. Manual OPTIONS Handling (Fail-safe for preflights)
-app.options(/.*/, (req, res) => {
+app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin && (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app"))) {
-    res.header("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else if (!origin) {
+    // Allow non-browser requests (like curl or postman) if needed
+    res.setHeader("Access-Control-Allow-Origin", "*");
   }
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.sendStatus(204);
+  
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.setHeader("Access-Control-Allow-Headers", "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+  next();
 });
 
 app.use(cookieParser())
